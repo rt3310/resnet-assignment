@@ -1,4 +1,6 @@
-import numpy as np
+import os.path
+
+import cupy as np
 
 
 class Convolution:
@@ -31,8 +33,8 @@ class Convolution:
         in_channels = in_tensor.shape[1]
         in_h = in_tensor.shape[2]
         in_w = in_tensor.shape[3]
-        padded = np.zeros([batch_num, in_channels, in_h + 2*pad_h, in_w + 2*pad_w])
-        padded[:, :, pad_h:pad_h+in_h, pad_w:pad_w+in_w] = in_tensor
+        padded = np.zeros((batch_num, in_channels, in_h + 2 * pad_h, in_w + 2 * pad_w))
+        padded[:, :, pad_h:pad_h+in_h, pad_w:pad_w+in_w] = np.asarray(in_tensor)
         return padded
 
     @staticmethod
@@ -112,3 +114,22 @@ class Convolution:
                 self.in_diff_tensor = self.in_diff_tensor[:, :, pad_h:-pad_h, pad_w:-pad_w]
 
         self.kernel -= lr * kernel_diff
+
+    def save(self, path, conv_num):
+        if os.path.exists(path) == False:
+            os.mkdir(path)
+
+        np.save(os.path.join(path, "conv{}_weight.npy".format(conv_num)), self.kernel)
+        if self.shift:
+            np.save(os.path.join(path, "conv{}_bias.npy".format(conv_num)), self.bias)
+
+        return conv_num + 1
+
+    def load(self, path, conv_num):
+        assert os.path.exists(path)
+
+        self.kernel = np.load(os.path.join(path, "conv{}_weight.npy".format(conv_num)))
+        if self.shift:
+            self.bias = np.load(os.path.join(path, "conv{}_bias.npy".format(conv_num)))
+
+        return conv_num + 1

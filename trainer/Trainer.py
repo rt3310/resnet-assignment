@@ -1,4 +1,4 @@
-import numpy as np
+import cupy as np
 
 
 class Trainer:
@@ -27,4 +27,4 @@ class Trainer:
 
         self.net.backward(out_diff_tensor, self.lr)
 
-        return loss
+        return loss.get()

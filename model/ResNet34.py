@@ -5,6 +5,8 @@ from components.Relu import Relu
 from components.Sigmoid import Sigmoid
 from components.AveragePooling import AveragePooling
 from model.ResBlock import ResBlock
+import os
+import cupy as np
 
 
 class ResNet34:

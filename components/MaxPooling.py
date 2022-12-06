@@ -1,4 +1,5 @@
 import numpy as np
+import cupy as cp
 
 
 class MaxPooling:
@@ -15,7 +16,7 @@ class MaxPooling:
         in_channels = in_tensor.shape[1]
         in_h = in_tensor.shape[2]
         in_w = in_tensor.shape[3]
-        padded = np.zeros([batch_num, in_channels, in_h + 2 * pad_h, in_w + 2 * pad_w])
+        padded = cp.zeros((batch_num, in_channels, in_h + 2 * pad_h, in_w + 2 * pad_w))
         padded[:, :, pad_h:pad_h + in_h, pad_w:pad_w + in_w] = in_tensor
 
         return padded
@@ -32,14 +33,14 @@ class MaxPooling:
         out_h = int((in_h - self.kernel_h) / self.stride) + 1
         out_w = int((in_w - self.kernel_w) / self.stride) + 1
 
-        out_tensor = np.zeros([batch_num, in_channels, out_h, out_w])
-        self.maxindex = np.zeros([batch_num, in_channels, out_h, out_w], dtype=np.int32)
+        out_tensor = cp.zeros((batch_num, in_channels, out_h, out_w))
+        self.maxindex = cp.zeros((batch_num, in_channels, out_h, out_w), dtype=np.int32)
         for i in range(out_h):
             for j in range(out_w):
                 part = in_tensor[:, :, i * self.stride:i * self.stride + self.kernel_h,
                        j * self.stride:j * self.stride + self.kernel_w].reshape(batch_num, in_channels, -1)
-                out_tensor[:, :, i, j] = np.max(part, axis=-1)
-                self.maxindex[:, :, i, j] = np.argmax(part, axis=-1)
+                out_tensor[:, :, i, j] = cp.max(part, axis=-1)
+                self.maxindex[:, :, i, j] = cp.argmax(part, axis=-1)
         self.out_tensor = out_tensor
         return self.out_tensor
 
@@ -55,12 +56,12 @@ class MaxPooling:
         out_diff_tensor = out_diff_tensor.reshape(batch_num * in_channels, out_h, out_w)
         self.maxindex = self.maxindex.reshape(batch_num * in_channels, out_h, out_w)
 
-        self.in_diff_tensor = np.zeros([batch_num * in_channels, in_h, in_w])
-        h_index = (self.maxindex / self.kernel_h).astype(np.int32)
-        w_index = self.maxindex - h_index * self.kernel_h
+        self.in_diff_tensor = cp.zeros((batch_num * in_channels, in_h, in_w))
+        h_index = (self.maxindex / self.kernel_h).astype(cp.int32)
+        w_index = (self.maxindex - h_index * self.kernel_h).astype(cp.int32)
         for i in range(out_h):
             for j in range(out_w):
-                self.in_diff_tensor[range(batch_num * in_channels),
+                self.in_diff_tensor[cp.arange(batch_num * in_channels),
                                     i * self.stride + h_index[:, i, j],
                                     j * self.stride + w_index[:, i, j]] += out_diff_tensor[:, i, j]
         self.in_diff_tensor = self.in_diff_tensor.reshape(batch_num, in_channels, in_h, in_w)
